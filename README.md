@@ -1,5 +1,8 @@
 # cs6650-distributed-systems
-Northeastern CS6650
+
+https://gortonator.github.io/bsds-6650/
+
+Done in Go and deployed to Google Cloud Platform for self-learning purposes.
 
 ## Create new Cloud Run Project
 
