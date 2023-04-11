@@ -9,9 +9,9 @@ Dennis Ping
 docker build -t skier-server:lab2 .
 ```
 
-### Run Docker container locally to test
+### Run Docker container locally to test for issues
 ```
-docker run -p 8080:8080 skier-server:lab2
+docker run -p 8080:8080 -e PORT=8080 skier-server:lab2
 ```
 
 ### Stop local Docker container
