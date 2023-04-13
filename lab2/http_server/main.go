@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
 	"net/http"
@@ -10,6 +11,10 @@ import (
 
 	"github.com/go-chi/chi"
 )
+
+type Number interface {
+	int32 | int64
+}
 
 func main() {
 	log.Print("starting server...")
@@ -64,86 +69,116 @@ func (s *Server) homeHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) skierTotalVertHandler(w http.ResponseWriter, r *http.Request) {
-	skierIDTxt := chi.URLParam(r, "skierID")
-	skierID, err := strconv.ParseInt(skierIDTxt, 10, 32)
+	skierID := chi.URLParam(r, "skierID")
+	resortID := r.URL.Query().Get("resortID") // optional
+	seasonID := r.URL.Query().Get("seasonID") // optional
+
+	skierIDNum, err := parseParamAsNumber[int32](skierID)
 	if err != nil {
-		http.Error(w, "invalid skierID", http.StatusBadRequest)
+		writeError(w, r.Method, http.StatusBadRequest, err.Error())
+		return
+	}
+	resortIDPtr, err := parseParamAsNumberPtr[int32](resortID)
+	if err != nil {
+		writeError(w, r.Method, http.StatusBadRequest, err.Error())
+		return
+	}
+	seasonIDPtr, err := parseQueryParamAsStringPtr(seasonID)
+	if err != nil {
+		writeError(w, r.Method, http.StatusBadRequest, err.Error())
 		return
 	}
 
-	// Parse query params as pointers
-	resortIDTxt := r.URL.Query().Get("resortID")
-	var resortID *int32
-	if resortIDTxt != "" {
-		resortIDInt, err := strconv.ParseInt(resortIDTxt, 10, 32)
-		if err != nil {
-			http.Error(w, "invalid resortID", http.StatusBadRequest)
-			return
-		}
-		resortIDValue := int32(resortIDInt)
-		resortID = &resortIDValue
-	}
-
-	seasonIDTxt := r.URL.Query().Get("seasonID")
-	var seasonID *string
-	if seasonIDTxt != "" {
-		seasonID = &seasonIDTxt
-	}
-
-	totalVert := s.store.GetSkierTotalVert(int32(skierID), resortID, seasonID)
+	totalVert := s.store.GetSkierTotalVert(skierIDNum, resortIDPtr, seasonIDPtr)
 	totalVertResp := TotalVertResponse{
 		TotalVert: totalVert,
 	}
-	respJson, err := json.Marshal(totalVertResp)
+	writeJsonResponse(w, http.StatusOK, totalVertResp)
+}
+
+func (s *Server) skierDayVertHandler(w http.ResponseWriter, r *http.Request) {
+	resortID := chi.URLParam(r, "resortID")
+	seasonID := chi.URLParam(r, "seasonID")
+	dayID := chi.URLParam(r, "dayID")
+	skierID := chi.URLParam(r, "skierID")
+
+	resortIDNum, err := parseParamAsNumber[int32](resortID)
+	if err != nil {
+		writeError(w, r.Method, http.StatusBadRequest, err.Error())
+		return
+	}
+	skierIDNum, err := parseParamAsNumber[int32](skierID)
+	if err != nil {
+		writeError(w, r.Method, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	switch r.Method {
+	case http.MethodGet:
+		totalVert := s.store.GetSkierDayVert(resortIDNum, seasonID, dayID, skierIDNum)
+		totalVertResp := TotalVertResponse{
+			TotalVert: totalVert,
+		}
+		writeJsonResponse(w, http.StatusOK, totalVertResp)
+	case http.MethodPost:
+		var skier Skier
+		decoder := json.NewDecoder(r.Body)
+		// We don't do anything with the body for now...
+		if err := decoder.Decode(&skier); err != nil {
+			writeError(w, r.Method, http.StatusBadRequest, err.Error())
+			return
+		}
+		s.store.AddSkier(skier)
+		w.WriteHeader(http.StatusOK)
+	default:
+		writeError(w, r.Method, http.StatusMethodNotAllowed, "method not allowed")
+	}
+}
+
+// Marshal and write a JSON response to the response writer
+func writeJsonResponse(w http.ResponseWriter, statusCode int, data interface{}) {
+	respJson, err := json.Marshal(data)
 	if err != nil {
 		http.Error(w, "error marshaling JSON response", http.StatusInternalServerError)
 		return
 	}
 	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
+	w.WriteHeader(statusCode)
 	w.Write(respJson)
 }
 
-func (s *Server) skierDayVertHandler(w http.ResponseWriter, r *http.Request) {
-	resortIDTxt := chi.URLParam(r, "resortID")
-	seasonID := chi.URLParam(r, "seasonID")
-	dayID := chi.URLParam(r, "dayID")
-	skierIDTxt := chi.URLParam(r, "skierID")
+// Write an HTTP error to the response writer
+func writeError(w http.ResponseWriter, method string, statusCode int, message string) {
+	log.Printf("Error: %s, %s, %d", method, message, statusCode)
+	http.Error(w, message, statusCode)
+}
 
-	resortID, err := strconv.ParseInt(resortIDTxt, 10, 32)
+// Generic function to parse a query param into a number
+func parseParamAsNumber[T Number](param string) (T, error) {
+	num, err := strconv.ParseInt(param, 10, 64)
 	if err != nil {
-		http.Error(w, "invalid resortID", http.StatusBadRequest)
-		return
+		return T(0), errors.New("not a number")
 	}
+	return T(num), nil
+}
 
-	skierID, err := strconv.ParseInt(skierIDTxt, 10, 32)
+// Generic function to parse a query param into a number pointer
+func parseParamAsNumberPtr[T Number](param string) (*T, error) {
+	if param == "" {
+		return nil, nil
+	}
+	num, err := strconv.ParseInt(param, 10, 64)
 	if err != nil {
-		http.Error(w, "invalid skierID", http.StatusBadRequest)
-		return
+		return nil, errors.New("not a number")
 	}
+	tNum := T(num)
+	return &tNum, nil
+}
 
-	if r.Method == http.MethodGet {
-		totalVert := s.store.GetSkierDayVert(int32(resortID), seasonID, dayID, int32(skierID))
-		totalVertResp := TotalVertResponse{
-			TotalVert: totalVert,
-		}
-		respJson, err := json.Marshal(totalVertResp)
-		if err != nil {
-			http.Error(w, "error marshaling JSON response", http.StatusInternalServerError)
-			return
-		}
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusOK)
-		w.Write(respJson)
-	} else if r.Method == http.MethodPost {
-		var skier Skier
-		decoder := json.NewDecoder(r.Body)
-		// We don't do anything with the body for now...
-		if err := decoder.Decode(&skier); err != nil {
-			http.Error(w, "error decoding JSON request", http.StatusBadRequest)
-			return
-		}
-		s.store.AddSkier(skier)
-		w.WriteHeader(http.StatusOK)
+// Parse a query param into a string pointer
+func parseQueryParamAsStringPtr(param string) (*string, error) {
+	if param == "" {
+		return nil, nil
 	}
+	return &param, nil
 }

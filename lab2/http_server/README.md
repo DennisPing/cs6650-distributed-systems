@@ -30,5 +30,9 @@ docker push gcr.io/cs6650-dping/skier-server:lab2
 
 ## Create new Cloud Run service
 ```
-gcloud run deploy skier-server --image gcr.io/cs6650-dping/skier-server:lab2 --platform managed --region us-central1 --allow-unauthenticated
+gcloud run deploy skier-server \
+    --image gcr.io/cs6650-dping/skier-server:lab2 \
+    --platform managed \
+    --region us-central1 \
+    --allow-unauthenticated
 ```
