@@ -8,12 +8,16 @@ import (
 	"net"
 	"sync"
 	"sync/atomic"
-	"time"
 )
 
 // A TCP server that listens on port 8080 and spawns a new goroutine for each new connection
 func main() {
-	listen, err := net.Listen("tcp", ":12031")
+	addr, err := net.ResolveTCPAddr("tcp", ":12031")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	listen, err := net.ListenTCP("tcp", addr)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -38,7 +42,9 @@ func main() {
 		go func() {
 			defer wg.Done()
 			defer atomic.AddInt64(&counter, -1) // Decrement by 1 when the goroutine exits
-			defer func() { <-workerPool }()     // Release the worker
+			defer func() {
+				<-workerPool // Release the worker
+			}()
 			handleConnection(ctx, conn, &counter)
 		}()
 	}
@@ -71,8 +77,5 @@ func handleConnection(ctx context.Context, conn net.Conn, counter *int64) {
 			return
 		}
 		writer.Flush()
-
-		// Sleep for 100ms to simulate some hard work
-		time.Sleep(100 * time.Millisecond)
 	}
 }

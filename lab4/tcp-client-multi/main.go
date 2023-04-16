@@ -24,20 +24,22 @@ func main() {
 	hostname = *hostnamePtr
 	port = *portPtr
 
-	numThreads := 1000
+	numThreads := 10_000
 	maxConcurrentConn := 100                                // Number of concurrent connections to the server. Prevent DDOS
 	connThrottler := make(chan struct{}, maxConcurrentConn) // Buffered channel for throttling outgoing connections
 	ctx := context.Background()
 	var counter int64
 	var wg sync.WaitGroup
 
+	startTime := time.Now()
+
 	for i := 0; i < numThreads; i++ {
+		connThrottler <- struct{}{} // Acquire a slot if there is available, else block
 		wg.Add(1)
-		connThrottler <- struct{}{} // Acquire a slot if there is available space, else block
 		go func() {
 			defer wg.Done()
 			defer func() {
-				<-connThrottler // Release the slot so that other connections can acquire slot
+				<-connThrottler // Release the slot so that other goroutines can acquire slot
 			}()
 			err := runJob(ctx, hostname, port, &counter)
 			if err != nil {
@@ -46,10 +48,12 @@ func main() {
 		}()
 	}
 	wg.Wait()
+
+	duration := time.Since(startTime)
+	fmt.Printf("Time taken for %d threads: %v\n", numThreads, duration)
 }
 
 func runJob(ctx context.Context, hostname string, port int, counter *int64) error {
-
 	var conn *net.TCPConn
 	var err error
 
@@ -92,7 +96,6 @@ func runJob(ctx context.Context, hostname string, port int, counter *int64) erro
 		return fmt.Errorf("error reading: %s", err)
 	}
 	fmt.Printf("%s", resp)
-
 	return nil
 }
 

@@ -1,15 +1,25 @@
-.PHONY: all server client-single client-multi clean
+.PHONY: all tcp-server tcp-client-single tcp-client-multi udp-server udp-client clean
 
-all: server client-single client-multi
+all: tcp-server tcp-client-single tcp-client-multi udp-server udp-client
 
-server:
-	go build -o ./server/server ./server/main.go
+tcp-server:
+	go build -o ./tcp-server/server ./tcp-server/main.go
 
-client-single:
-	go build -o ./client-single/client ./client-single/main.go
+tcp-client-single:
+	go build -o ./tcp-client-single/client ./tcp-client-single/main.go
 
-client-multi:
-	go build -o ./client-multi/client ./client-multi/main.go
+tcp-client-multi:
+	go build -o ./tcp-client-multi/client ./tcp-client-multi/main.go
+
+udp-server:
+	go build -o ./udp-server/server ./udp-server/main.go
+
+udp-client:
+	go build -o ./udp-client/client ./udp-client/main.go
 
 clean:
-	rm -f ./server/server ./client-single/client ./client-multi/client
+	rm -f ./tcp-server/server 
+	rm -f ./tcp-client-single/client 
+	rm -f ./tcp-client-multi/client 
+	rm -f ./udp-server/server
+	rm -f ./udp-client/client
