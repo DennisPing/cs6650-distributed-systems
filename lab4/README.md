@@ -9,19 +9,29 @@ Dennis Ping
 make
 ```
 
-### Run Server
+### Run TCP Server
 ```
 ./tcp-server/server 
 ```
 
-### Run Single-threaded Client
+### Run TCP Single-threaded Client
 ```
 ./tcp-client-single/client -h localhost -p 12031
 ```
 
-### Run Multi-threaded Client
+### Run TCP Multi-threaded Client
 ```
 ./tcp-client-multi/client -h localhost -p 12031
+```
+
+### Run UDP Server
+```
+./udp-server/server
+```
+
+### Run UDP Client
+```
+./udp-client/client -h localhost -p 12031
 ```
 
 ## Multi-threaded Server
