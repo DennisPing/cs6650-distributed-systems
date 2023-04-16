@@ -23,6 +23,10 @@ gcloud init
 gcloud auth login
 ```
 
+## Create a new project in Google Cloud Web Console
+
+This will house all Compute Engines (VM), Cloud Runs (serverless), Storage (DB and Bucket), etc.
+
 ## Set project as default
 ```
 gcloud config set project cs6650-dping
