@@ -46,7 +46,7 @@ func main() {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			conn := <-connPool // Acquire a conn from the connPool
+			conn := <-connPool // Acquire a conn from the connPool if available, else block
 			defer func() {
 				connPool <- conn // Release the conn into the connPool
 			}()
@@ -78,7 +78,7 @@ func runJob(ctx context.Context, conn *net.UDPConn, counter *int64) error {
 	}
 
 	// Wait and read from the connection
-	buf := make([]byte, 1024)
+	buf := make([]byte, 256)
 	n, _, err := conn.ReadFromUDP(buf)
 	if err != nil {
 		return fmt.Errorf("error reading: %s", err)

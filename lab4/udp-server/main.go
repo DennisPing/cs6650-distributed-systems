@@ -9,7 +9,7 @@ import (
 	"sync/atomic"
 )
 
-// A TCP server that listens on port 8080 and spawns a new goroutine for each new connection
+// A UDP server that listens on port 12031 and executes jobs on its worker pool
 func main() {
 	addr, err := net.ResolveUDPAddr("udp", ":12031")
 	if err != nil {
@@ -45,10 +45,10 @@ func main() {
 
 func handlePacket(ctx context.Context, conn *net.UDPConn, counter *int64) {
 	numGoroutines := atomic.AddInt64(counter, 1)
-
-	buf := make([]byte, 1024)
+	buf := make([]byte, 256)
 
 	for {
+		// Read from the connection
 		n, addr, err := conn.ReadFromUDP(buf)
 		if err != nil {
 			log.Printf("error reading: %s", err)
@@ -57,7 +57,7 @@ func handlePacket(ctx context.Context, conn *net.UDPConn, counter *int64) {
 		message := string(buf[:n])
 		fmt.Printf("%s", message)
 
-		// Write the number of goroutines that are currently running
+		// Write response to the connection
 		resp := fmt.Sprintf("Number of goroutines on server: %d\n", numGoroutines)
 		_, err = conn.WriteToUDP([]byte(resp), addr)
 		if err != nil {

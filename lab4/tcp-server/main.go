@@ -10,7 +10,7 @@ import (
 	"sync/atomic"
 )
 
-// A TCP server that listens on port 8080 and spawns a new goroutine for each new connection
+// A TCP server that listens on port 12031 and spawns a new goroutine for each new connection
 func main() {
 	addr, err := net.ResolveTCPAddr("tcp", ":12031")
 	if err != nil {
@@ -70,7 +70,7 @@ func handleConnection(ctx context.Context, conn net.Conn, counter *int64) {
 		}
 		fmt.Printf("%s", message)
 
-		// Write the number of goroutines that are currently running
+		// Write response to the connection
 		_, err = writer.WriteString(fmt.Sprintf("Number of goroutines on server: %d\n", numGoroutines))
 		if err != nil {
 			log.Printf("error writing: %s", err)
