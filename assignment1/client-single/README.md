@@ -1,5 +1,17 @@
 # Twinder Client
 
+## Getting Started
+
+### Build
+```
+make
+```
+
+### Run
+```
+./client
+```
+
 ## Watch out
 
 The Swagger API specifies the POST endpoint as:
