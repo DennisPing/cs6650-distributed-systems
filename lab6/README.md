@@ -57,10 +57,8 @@ docker run -d --name rabbitmq -p 5672:5672 -p 15672:15672 -e RABBITMQ_DEFAULT_US
 http://[elastic_ip]:15672
 ```
 
-## Consumer
+### Restart a stopped Docker container
 
-Todo
-
-## Producer
-
-Todo
+```
+docker start rabbitmq
+```
