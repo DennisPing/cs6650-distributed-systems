@@ -51,17 +51,16 @@ func main() {
 			msg, _ := reader.ReadString('\n')
 			err := publisher.Publish(
 				[]byte(msg),
-				[]string{"my_queue"}, // the mailing address for this msg
+				[]string{"task_queue"}, // the mailing address for this msg
 				rabbitmq.WithPublishOptionsContentType("text/plain"),
-				rabbitmq.WithPublishOptionsMandatory,
 				rabbitmq.WithPublishOptionsExchange(""), // default exchange
 			)
 			if err != nil {
-				log.Println(err)
+				log.Fatal(err)
 			}
 		}
 	}()
 
 	<-c
-	fmt.Println("\nPublisher is shutting down gracefully")
+	fmt.Println("\nShutting down publisher gracefully")
 }

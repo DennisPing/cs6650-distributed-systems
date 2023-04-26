@@ -5,7 +5,9 @@ import (
 	"log"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
+	"time"
 
 	"github.com/wagslane/go-rabbitmq"
 )
@@ -35,23 +37,22 @@ func main() {
 		func(d rabbitmq.Delivery) rabbitmq.Action {
 			log.Printf("Received: %s", string(d.Body))
 
-			// Simulate work using time.Sleep()
-			// dotCount := strings.Count(string(d.Body), ".")
-			// time.Sleep(time.Duration(dotCount) * time.Second)
+			dotCount := strings.Count(string(d.Body), ".")
+			time.Sleep(time.Duration(dotCount) * time.Second)
 			return rabbitmq.Ack
 		},
-		"my_queue", // the mailbox to receive on
-		rabbitmq.WithConsumerOptionsLogging,
-		rabbitmq.WithConsumerOptionsQOSPrefetch(1),
+		"task_queue", // the mailbox to receive on
+		rabbitmq.WithConsumerOptionsExchangeName(""), // default exchange
+		rabbitmq.WithConsumerOptionsQueueDurable,     // persist messages if RabbitMQ dies
+		rabbitmq.WithConsumerOptionsQOSPrefetch(1),   // handle only one message at a time
 	)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	// Add a signal handler to gracefully shut down the consumer
 	defer consumer.Close()
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 	<-quit
-	log.Println("Closing consumer")
+	log.Println("Shutting down consumer gracefully")
 }
