@@ -44,8 +44,8 @@ func main() {
 
 	// Start a persistent goroutine that publishes user messages
 	go func() {
+		fmt.Print(">> ")
 		for scanner.Scan() {
-			fmt.Print(">> ")
 			msg := scanner.Text()
 			err := publisher.Publish(
 				[]byte(msg),
@@ -55,6 +55,7 @@ func main() {
 			if err != nil {
 				log.Fatal(err)
 			}
+			fmt.Print(">> ")
 		}
 		if err := scanner.Err(); err != nil {
 			log.Printf("Error reading from stdin: %v", err)
