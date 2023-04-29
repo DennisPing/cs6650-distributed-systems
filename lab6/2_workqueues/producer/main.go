@@ -40,27 +40,29 @@ func main() {
 	}
 	defer publisher.Close()
 
-	reader := bufio.NewReader(os.Stdin)
-	c := make(chan os.Signal, 1)
-	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
+	scanner := bufio.NewScanner(os.Stdin)
 
 	// Start a persistent goroutine that publishes user messages
 	go func() {
-		for {
-			fmt.Print("Enter message: ")
-			msg, _ := reader.ReadString('\n')
+		for scanner.Scan() {
+			fmt.Print(">> ")
+			msg := scanner.Text()
 			err := publisher.Publish(
 				[]byte(msg),
 				[]string{"task_queue"}, // the mailing address for this msg
 				rabbitmq.WithPublishOptionsContentType("text/plain"),
-				rabbitmq.WithPublishOptionsExchange(""), // default exchange
 			)
 			if err != nil {
 				log.Fatal(err)
 			}
 		}
+		if err := scanner.Err(); err != nil {
+			log.Printf("Error reading from stdin: %v", err)
+		}
 	}()
 
-	<-c
-	fmt.Println("\nShutting down publisher gracefully")
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, os.Interrupt, syscall.SIGTERM)
+	<-quit
+	fmt.Println("Shutting down publisher gracefully")
 }
