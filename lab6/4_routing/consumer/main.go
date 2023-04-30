@@ -49,7 +49,7 @@ func main() {
 	}
 	defer conn.Close()
 
-	routingKeys := multipleRoutingKeys(levels)
+	consumerOptions := createConsumerOptions(levels)
 
 	consumer, err := rabbitmq.NewConsumer(
 		conn,
@@ -58,13 +58,7 @@ func main() {
 			return rabbitmq.Ack
 		},
 		"",
-		append([]func(*rabbitmq.ConsumerOptions){
-			rabbitmq.WithConsumerOptionsLogging,
-			rabbitmq.WithConsumerOptionsExchangeDeclare,
-			rabbitmq.WithConsumerOptionsExchangeDurable,
-			rabbitmq.WithConsumerOptionsExchangeName("logs_direct"),
-			rabbitmq.WithConsumerOptionsExchangeKind("direct"),
-		}, routingKeys...)...,
+		consumerOptions...,
 	)
 	if err != nil {
 		log.Fatal(err)
@@ -78,11 +72,22 @@ func main() {
 	log.Println("Shutting down consumer gracefully")
 }
 
-func multipleRoutingKeys(keys []string) []func(*rabbitmq.ConsumerOptions) {
-	options := make([]func(*rabbitmq.ConsumerOptions), 0, len(keys))
-	for _, key := range keys {
-		routingKeyOption := rabbitmq.WithConsumerOptionsRoutingKey(key)
-		options = append(options, routingKeyOption)
+// Create a slice of ptr ConsumerOptions using a slice of desired log levels
+func createConsumerOptions(levels []string) []func(*rabbitmq.ConsumerOptions) {
+	baseOptions := []func(*rabbitmq.ConsumerOptions){
+		rabbitmq.WithConsumerOptionsLogging,
+		rabbitmq.WithConsumerOptionsExchangeDeclare,
+		rabbitmq.WithConsumerOptionsExchangeDurable,
+		rabbitmq.WithConsumerOptionsExchangeName("logs_direct"),
+		rabbitmq.WithConsumerOptionsExchangeKind("direct"),
 	}
-	return options
+
+	allOptions := append([]func(*rabbitmq.ConsumerOptions){}, baseOptions...)
+
+	for _, level := range levels {
+		levelOption := rabbitmq.WithConsumerOptionsRoutingKey(level)
+		allOptions = append(allOptions, levelOption)
+	}
+
+	return allOptions
 }
