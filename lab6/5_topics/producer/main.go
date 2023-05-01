@@ -92,12 +92,3 @@ func main() {
 		}
 	}
 }
-
-// func parseLogInput(input string) ([]string, string, error) {
-// 	logText := strings.TrimSpace(input)
-// 	if logText == "" {
-// 		return []string{""}, "", errors.New("Null input")
-// 	}
-// 	parts := strings.Split(logText, " ")
-
-// }
