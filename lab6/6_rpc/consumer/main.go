@@ -26,7 +26,10 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+	ListenAndServe(conn)
+}
 
+func ListenAndServe(conn *rabbitmq.Conn) {
 	// Initialize the request channel
 	reqChan := make(chan rabbitmq.Delivery)
 
@@ -69,11 +72,11 @@ func main() {
 			resp = "Not a number"
 		} else if n < 0 {
 			resp = "Cannot be negative number"
-		} else if n > 46 {
-			resp = "Cannot be greater than 46"
+		} else if n > 92 {
+			resp = "Cannot be greater than 92"
 		} else {
-			fibNumber := fib(n)
-			resp = strconv.Itoa(fibNumber)
+			fibNumber := fib(uint64(n))
+			resp = strconv.FormatUint(fibNumber, 10)
 			log.Printf("Computed fib(%d) = %d", n, fibNumber)
 		}
 
@@ -91,11 +94,10 @@ func main() {
 			log.Printf("Sending response: %s", resp)
 		}
 	}
-
 }
 
 // Inefficient recursive fibonacci formula
-func fib(n int) int {
+func fib(n uint64) uint64 {
 	if n == 0 {
 		return 0
 	} else if n == 1 {

@@ -43,14 +43,14 @@ func main() {
 	}
 
 	// Send the RPC and wait for the response
-	resp, err := FibonnaciRPC(conn, n)
+	resp, err := FibonacciRPC(conn, n)
 	if err != nil {
 		log.Fatal(err)
 	}
 	log.Printf("Got: %s", resp)
 }
 
-func FibonnaciRPC(conn *rabbitmq.Conn, fibNumber int) (resp string, err error) {
+func FibonacciRPC(conn *rabbitmq.Conn, fibNumber int) (resp string, err error) {
 	defer conn.Close()
 
 	// Initialize response channel
@@ -70,7 +70,7 @@ func FibonnaciRPC(conn *rabbitmq.Conn, fibNumber int) (resp string, err error) {
 
 	// Generate unique random IDs for correlation and reply-to queue
 	rand.Seed(time.Now().UnixNano())
-	randId := randString(32)
+	correlationId := randString(32)
 	replyToQueue := "reply_to_" + randString(16)
 
 	// Create the consumer who will receive the response
@@ -78,8 +78,8 @@ func FibonnaciRPC(conn *rabbitmq.Conn, fibNumber int) (resp string, err error) {
 		conn,
 		func(d rabbitmq.Delivery) rabbitmq.Action {
 			resp := string(d.Body)
-			if d.CorrelationId == randId {
-				responseChan <- resp // Send the calculated value to the resp channel
+			if d.CorrelationId == correlationId {
+				responseChan <- resp // Send the response to the resp channel
 			}
 			return rabbitmq.Ack
 		},
@@ -100,7 +100,7 @@ func FibonnaciRPC(conn *rabbitmq.Conn, fibNumber int) (resp string, err error) {
 		[]string{"rpc_queue"},
 		rabbitmq.WithPublishOptionsContentType("text/plain"),
 		rabbitmq.WithPublishOptionsExchange(""),
-		rabbitmq.WithPublishOptionsCorrelationID(randId),
+		rabbitmq.WithPublishOptionsCorrelationID(correlationId),
 		rabbitmq.WithPublishOptionsReplyTo(replyToQueue),
 	)
 	if err != nil {
