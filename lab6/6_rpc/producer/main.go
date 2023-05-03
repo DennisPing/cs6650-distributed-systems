@@ -94,6 +94,7 @@ func FibonacciRPC(conn *rabbitmq.Conn, fibNumber int) (resp string, err error) {
 	}
 	defer consumer.Close()
 
+	log.Printf("Sending: %d", fibNumber)
 	// Send the RPC request
 	err = publisher.Publish(
 		[]byte(strconv.Itoa(fibNumber)),
